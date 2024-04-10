@@ -1,0 +1,46 @@
+import pandas as pd
+def transform_df_multi_prefix(df, prefixes,years):
+    # Initialize an empty DataFrame to hold all transformed data
+    combined_transformed_df = pd.DataFrame()
+
+    # Iterate through each prefix and transform the DataFrame
+    for prefix in prefixes:
+        transformed_rows = []
+
+        # Identify all the columns that start with the given prefix
+        
+        columns = [f"{prefix} {year}" for year in years]
+
+        # Iterate over each row in the DataFrame
+        for _, row in df.iterrows():
+            # For each 't' year from 2019 to 2021
+            for t in years:
+                # Create a dictionary for the new row
+                new_row = {
+                    'Region': row['Region'],
+                    'Name': row['Name'],
+                    f'{prefix} t-1': row.get(f'{prefix} {t}') if t >= years.start else None,
+                    f'{prefix} t': row.get(f'{prefix} {t+1}'),
+                    f'{prefix} t+1': row.get(f'{prefix} {t+2}') if t <= years.stop - 1 else None,
+                    'Year t': t+1  # Adding 'Year t' to be used as a merging key
+                }
+                # Append the new row to the list
+                transformed_rows.append(new_row)
+
+        # Convert the list of transformed rows into a DataFrame
+        prefix_df = pd.DataFrame(transformed_rows)
+
+        # If the combined DataFrame is empty, initialize it with the first prefix DataFrame
+        if combined_transformed_df.empty:
+            combined_transformed_df = prefix_df
+        else:
+            # Merge the new prefix DataFrame with the combined DataFrame on 'Region', 'Name', and 'Year t'.
+            combined_transformed_df = pd.merge(combined_transformed_df, prefix_df,
+                                               on=['Region', 'Name', 'Year t'], how='outer')
+    df_cleaned=combined_transformed_df.dropna()
+    df_cleaned = df_cleaned[~df_cleaned.eq('#REF!').any(axis=1)]
+    columns_to_convert = ['Admissions t-1', 'Admissions t', 'Admissions t+1', 'Inpatient days t-1', 'Inpatient days t', 'Inpatient days t+1']
+    for col in columns_to_convert:
+        df_cleaned[col] = df_cleaned[col].str.replace(',', '').astype(float)
+    # Return the combined DataFrame with all prefixes transformed
+    return df_cleaned
