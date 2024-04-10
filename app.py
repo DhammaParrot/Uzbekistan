@@ -67,13 +67,13 @@ st.markdown("""
 
 
 # Path to your pre-uploaded CSV file within the app's directory
-pre_uploaded_file_path = '/Users/tommaso/m4h-kaz/Tommaso_Data2 - 3-R-Overview_v2.csv'
+#pre_uploaded_file_path = '/Users/tommaso/m4h-kaz/Tommaso_Data2 - 3-R-Overview_v2.csv'
 
-
+pre_uploaded_file_path = 'Tommaso_Data2 - 3-R-Overview_v2.csv'
 # Main function to display the app
 def main():
     
-    st.image("/Users/tommaso/m4h-kaz/m4h-logo-web.png")
+    st.image("m4h-logo-web.png")
     st.title("Hospitals Uzbekistan")
 
     # Create vertical tabs in the sidebar
