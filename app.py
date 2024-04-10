@@ -94,7 +94,7 @@ def main():
         st.markdown('#### Hospital Beds Occupancy Modelling')
         
         # Add new columns
-        st.subheader("#### Add New Column:")
+        st.markdown("#### Add New Column:")
         st.markdown(
             "If you have new data for the Beds and Admissions for a particular year, "
             "and want to predict Bed Occupancy for the following year, add columns like: "

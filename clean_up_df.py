@@ -1,5 +1,4 @@
 import pandas as pd
-
 import numpy as np
 from model_training import find_prefix_years
 from helper import add_column_next_tov2
