@@ -21,14 +21,14 @@ def clean_and_impute_dataframe(df, columns_to_exclude):
         if col not in columns_to_exclude and df[col].isnull().any():
             mean_value = df[col].mean()
             df[col].fillna(mean_value, inplace=True)
-    df_years = find_prefix_years(df, ["Beds","BOR","Admissions"])
+    # df_years = find_prefix_years(df, ["BOR"])
    
-    for year in range(df_years[0], df_years[-1]+1):
+    # for year in range(df_years[0], df_years[-1]+1):
        
-        beds_col = f'Beds {year}'
-        occupied_col = f'Beds_Occupied {year}'
-        add_column_next_tov2(df, occupied_col)
-        df[occupied_col] = (df[beds_col] * df[f'BOR {year}'] * 0.01).round().astype(int)
+    #     beds_col = f'Beds {year}'
+    #     occupied_col = f'Beds_Occupied {year}'
+    #     add_column_next_tov2(df, occupied_col)
+    #     df[occupied_col] = (df[beds_col] * df[f'BOR {year}'] * 0.01).round().astype(int)
     
     return df
 

@@ -14,10 +14,11 @@ def predict_future_years(df, transformed_df):
     # List of predictor variables
     #predictor_variables = ['Beds_Occupied t-1', 'Beds_Occupied t', 'Livebirths t-1', 'Livebirths t', 'Inpatient days t-1', 'Inpatient days t',
      #                      'Deliveries t-1', 'Deliveries t']
-    predictor_variables = ['Beds_Occupied t-1', 'Beds_Occupied t', 'Admissions t-1', 'Admissions t']
+    #predictor_variables = ['Beds_Occupied t-1', 'Beds_Occupied t', 'Admissions t-1', 'Admissions t']
+    predictor_variables = ['BOR t-1', 'BOR t']
 
     # List of target variables
-    target_variables = ['Beds_Occupied t+1']
+    target_variables = ['BOR t+1']
 
     # Create a copy of the df DataFrame to store predictions
     df_with_predictions = df.copy()
@@ -50,13 +51,19 @@ def predict_future_years(df, transformed_df):
             year_t = df_years[i + 1]
             year_t_plus_1 = df_years[i + 2]
 
-            new_data = {
-                'Beds_Occupied t-1': df[f'Beds_Occupied {year_t_minus_1}'],
-                'Beds_Occupied t': df[f'Beds_Occupied {year_t}'],
-                'Admissions t-1': df[f'Admissions {year_t_minus_1}'],
-                'Admissions t': df[f'Admissions {year_t}'],
+            # new_data = {
+            #     'Beds_Occupied t-1': df[f'Beds_Occupied {year_t_minus_1}'],
+            #     'Beds_Occupied t': df[f'Beds_Occupied {year_t}'],
+            #     'Admissions t-1': df[f'Admissions {year_t_minus_1}'],
+            #     'Admissions t': df[f'Admissions {year_t}'],
             
-            }
+            # }
+            new_data = {
+                            'BOR t-1': df[f'BOR {year_t_minus_1}'],
+                            'BOR t': df[f'BOR {year_t}'],
+                        
+                        }
+
 
             new_df = pd.DataFrame(new_data)
             predictions = model.predict(new_df)

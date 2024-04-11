@@ -5,6 +5,7 @@ from model_training import predict_future_years
 from helper import load_csv, add_column_next_tov2, filter_columns_by_prefix, columns_filled, make_heatmap
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import re
 import altair as alt
 # Page configuration
@@ -91,14 +92,14 @@ def main():
 
     
     with col[0]:
-        st.markdown('#### Hospital Beds Occupancy Modelling')
+        st.markdown('#### Hospital Beds Occupancy Rate Modelling')
         
         # Add new columns
         st.markdown("#### Add New Column:")
         st.markdown(
-            "If you have new data for the Beds and Admissions for a particular year, "
-            "and want to predict Bed Occupancy for the following year, add columns like: "
-            "Beds <year>, BOR <year>, Admissions <year> and paste in the data for each "
+            "If you have new data for the BOR for a particular year, "
+            "and want to predict BOR for the following year, add a BOR <year>"
+            "olumn and paste in the data, in that"
             "column in the editable dataframe below. Then click the Train Model below button to train the model."
         )
         col_name = st.text_input("Column Name:")
@@ -110,7 +111,7 @@ def main():
                     st.success(f"Column '{col_name}' added.")
                 else:
                     st.error(f"Column '{col_name}' already exists.")
-        filtered=filter_columns_by_prefix(st.session_state.df, ["Region","Name","Beds","BOR","Admissions"])
+        filtered=filter_columns_by_prefix(st.session_state.df, ["Region","Name","BOR"])
         edited_df =st.data_editor(data=filtered,key="first")
         if st.button("Train Model"):
             for col in edited_df.columns:
@@ -148,7 +149,7 @@ def main():
             columns_to_exclude = ['Region', 'Name', 'Category']
             
             st.session_state.df = clean_and_impute_dataframe(st.session_state.df, columns_to_exclude)
-            filtered=filter_columns_by_prefix(st.session_state.df, ["Region","Name","Beds","BOR","Admissions"])
+            filtered=filter_columns_by_prefix(st.session_state.df, ["Region","Name","BOR"])
             #st.data_editor(data=filtered,key="second")
         else:
             # Not all required columns are present and filled for each detected year; instruct the user to add them
@@ -166,7 +167,7 @@ def main():
 
         transformed_df = None
         # Apply the function to the DataFrame with the list of prefixes and years
-        selected_prefixes = ["Beds_Occupied", "Admissions","Inpatient days","Livebirths","Deliveries"]
+        selected_prefixes = ["BOR"]
         transformed_df = transform_df_multi_prefix(st.session_state.df, selected_prefixes)
         st.session_state['transformed_df'] = transformed_df
 
@@ -196,8 +197,10 @@ def main():
                 hospital_data = st.session_state['df_with_predictions'][st.session_state['df_with_predictions']['Name'] == selected_hospital]
 
                 # Extract years and model prediction columns dynamically
-                year_columns = [col for col in hospital_data.columns if 'Beds_Occupied' in col and 'Model' not in col]
-                model_columns = [col for col in hospital_data.columns if 'Beds_Occupied' in col and 'Model' in col and 'Model_Std' not in col]
+                # year_columns = [col for col in hospital_data.columns if 'Beds_Occupied' in col and 'Model' not in col]
+                # model_columns = [col for col in hospital_data.columns if 'Beds_Occupied' in col and 'Model' in col and 'Model_Std' not in col]
+                year_columns = [col for col in hospital_data.columns if 'BOR' in col and 'Model' not in col]
+                model_columns = [col for col in hospital_data.columns if 'BOR' in col and 'Model' in col and 'Model_Std' not in col]
 
                 year_columns.sort(key=lambda x: int(x.split(' ')[-1]) if x.split(' ')[-1].isdigit() else float('inf'))
                 model_columns.sort(key=lambda x: int(x.split(' ')[-1]) if x.split(' ')[-1].isdigit() else float('inf'))
@@ -205,13 +208,13 @@ def main():
                 # Prepare the data for Altair
                 years = [int(col.split(' ')[-1]) for col in year_columns]
                 model_years = [int(col.split(' ')[-2]) for col in model_columns]
-                beds_occupied = [hospital_data[col].iloc[0] for col in year_columns]
+                beds_occupied_rate = [hospital_data[col].iloc[0] for col in year_columns]
                 predictions = [hospital_data[col].iloc[0] for col in model_columns]
 
                 # Create a DataFrame for the Altair chart
                 chart_data = pd.DataFrame({
                     'Year': years + [model_years[-1]],
-                    'Beds Occupied': beds_occupied + [predictions[-1]],
+                    'BOR': beds_occupied_rate + [predictions[-1]],
                     'Type': ['Ground Truth'] * len(years) + ['Model Prediction']
                 })
 
@@ -233,7 +236,7 @@ def main():
                 bright_purple_hex = rgb_to_hex(bright_purple_rgb)
                 line_chart = alt.Chart(chart_data).mark_line(point=True, color=purple_hex).encode(
                     x=alt.X('Year:O', axis=alt.Axis(title='Year')),
-                    y=alt.Y('Beds Occupied:Q', axis=alt.Axis(title='Beds Occupied'))
+                    y=alt.Y('BOR:Q', axis=alt.Axis(title='BOR'))
                 ).transform_filter(
                     alt.datum.Type == 'Ground Truth'  # Apply the filter for Ground Truth data
                 )
@@ -241,7 +244,7 @@ def main():
                 # Create the Altair chart for the prediction line
                 prediction_line = alt.Chart(chart_data).mark_line(point=True, color=bright_purple_hex).encode(
                     x='Year:O',
-                    y='Beds Occupied:Q'
+                    y='BOR:Q'
                 ).transform_filter(
                     alt.datum.Type == 'Model Prediction'  # Apply the filter for Model Prediction data
                 )
@@ -249,28 +252,64 @@ def main():
                 # Dotted line connecting the last ground truth value with the prediction (using bright purple)
                 dotted_line = alt.Chart(pd.DataFrame({
                     'Year': [years[-1], model_years[-1]],
-                    'Beds Occupied': [beds_occupied[-1], predictions[-1]]
+                    'BOR': [beds_occupied_rate[-1], predictions[-1]]
                 })).mark_line(point=False, strokeDash=[5, 5], color=bright_purple_hex).encode(
                     x='Year:O',
-                    y='Beds Occupied:Q'
+                    y='BOR:Q'
                 )
 
                 # Error bands around the prediction (remain unchanged)
                 error_bands = alt.Chart(pd.DataFrame({
                     'Year': [model_years[-1]] * 2,
-                    'Beds Occupied': [lower_bound, upper_bound]
+                    'BOR': [lower_bound, upper_bound]
                 })).mark_area(opacity=0.3, color='orange').encode(
                     x='Year:O',
-                    y='Beds Occupied:Q'
+                    y='BOR:Q'
                 )
                 # Combine the charts
                 combined_chart = alt.layer(line_chart, prediction_line,dotted_line, error_bands).properties(
-                    title=f'Beds Occupied - {selected_hospital}',
+                    title=f'BOR - {selected_hospital}',
                     width=750,
                     height=500
                 )
 
                 st.altair_chart(combined_chart)
+        st.markdown("Below are the features that have the largest impact on predicting BOR into the future")
+
+        if 'trained_model' in st.session_state:
+            predictor_variables =['Population 2023','Building size (sqm)','sqm / Bed','BOR t-1', 'BOR t', 'Admissions t-1', 'Admissions t', 'Inpatient days t-1', 'Inpatient days t','CS t-1', 'CS t', 'CS rate (%) t-1','CS rate (%) t', 'ALOS t-1', 'ALOS t', 'Deliveries t-1', 'Deliveries t', 'Stillbirths t-1', 'Stillbirths t', 'Livebirths t-1', 'Livebirths t', 'Maternal Transfer t-1', 'Maternal Transfer t', 'Neonatal Death t-1', 'Neonatal Death t','NMR t-1', 'NMR t', 'Maternal Deaths t-1', 'Maternal Deaths t', 'MMR t-1', 'MMR t']
+            # Assuming 'trained_model' is your model and 'X' is your data
+            importances = [0.00383154, 0.00748704, 0.00554881, 0.29311319, 0.48125336, 0.01301272,
+               0.01105569, 0.00297499, 0.03176286, 0.00380204, 0.00231692, 0.02053949,
+               0.0067065, 0.00424602, 0.00719706, 0.00612333, 0.0042153, 0.0047311,
+               0.01976471, 0.02174556, 0.0084041, 0.00378774, 0.00678662, 0.00210833,
+               0.00385732, 0.00343363, 0.00284615, 0.00236786, 0.00159563, 0.00609418,
+               0.00729022]
+
+            # Sort feature importances in descending order
+            indices = [4, 3, 8, 19, 11, 18, 5, 6, 20, 1, 30, 14, 22, 12, 15, 29, 2, 17, 13, 16, 24, 0, 9, 21, 25, 7, 26, 27, 10, 23, 28]
+
+
+            # Rearrange feature names so they match the sorted feature importances
+            
+            # Create a DataFrame for plotting
+            data = pd.DataFrame({'Feature': [predictor_variables[i] for i in indices], 'Importance': [importances[i] for i in indices]})
+
+            # Create a bar chart using Altair
+            chart = alt.Chart(data).mark_bar().encode(
+                x=alt.X('Feature', sort=None, axis=alt.Axis(labelAngle=90)),
+                y='Importance',
+                tooltip=['Feature', 'Importance']
+            ).properties(
+                width=750,
+                height=500,
+                title='Feature Importance'
+            )
+
+            # Show the chart
+            chart
+        
+                    
                 
               
 
