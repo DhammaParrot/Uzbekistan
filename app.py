@@ -3,9 +3,9 @@ import pandas as pd
 from clean_up_df import clean_and_impute_dataframe, transform_df_multi_prefix
 from model_training import predict_future_years
 from helper import load_csv, add_column_next_tov2, filter_columns_by_prefix, columns_filled, make_heatmap
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
+# import seaborn as sns
 import re
 import altair as alt
 # Page configuration
